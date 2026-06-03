@@ -3,180 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projeto Mutante - Treino CAB</title>
+    <title>Projeto Mutante v3.1 - Upper/Lower Dinâmico</title>
     <style>
         /* Reset básico e fundo preto */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #0a0a0a;
-            color: #f0f0f0;
+            background-color: #0a0a0a; color: #f0f0f0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px 15px;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
+        
+        /* Menu e Sidebar */
+        .menu-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            cursor: pointer; background: rgba(10, 10, 10, 0.8);
+            padding: 5px; border-radius: 4px;
+        }
+        .bar { width: 25px; height: 3px; background-color: #00ff55; margin: 5px 0; transition: 0.4s; }
+        .menu-btn.open .bar:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+        .menu-btn.open .bar:nth-child(2) { opacity: 0; }
+        .menu-btn.open .bar:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+
+        .sidebar {
+            height: 100%; width: 250px; position: fixed; z-index: 999;
+            top: 0; left: -250px; background-color: #111; overflow-x: hidden;
+            transition: 0.5s; padding-top: 80px; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+        .sidebar-item {
+            padding: 15px 25px; text-decoration: none; font-size: 18px;
+            color: #f0f0f0; display: block; transition: 0.3s; cursor: pointer;
+            border-bottom: 1px solid #222;
+        }
+        .sidebar-item:hover { background-color: #1a1a1a; color: #00ff55; }
+        .sidebar-item.active {
+            color: #00ff55; font-weight: bold; border-left: 4px solid #00ff55; padding-left: 21px;
         }
 
-        /* Estilo do título principal */
-        h1 {
-            color: #00ff55;
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 30px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
+            z-index: 998; transition: 0.3s;
         }
+        .overlay.show { display: block; }
 
-        /* Cartões de cada dia */
+        /* Estrutura Principal */
+        .container { max-width: 500px; margin: 0 auto; padding: 80px 15px 30px; transition: 0.5s; }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: #0a0a0a; padding: 20px 0; text-align: center; z-index: 900;
+        }
+        h1 { color: #00ff55; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* Estilo dos Subtítulos (Novo) */
+        .workout-section { margin-bottom: 30px; }
+        .section-subtitle {
+            color: #888; font-size: 14px; font-weight: bold;
+            letter-spacing: 1px; text-transform: uppercase;
+            cursor: pointer; display: inline-block; margin-bottom: 10px;
+            user-select: none;
+        }
+        .section-subtitle.static { cursor: default; }
+        
+        /* Dropdown do Upper (Novo) */
+        .dropdown { position: relative; display: inline-block; margin-bottom: 10px; }
+        .dropdown-content {
+            display: none; position: absolute; background-color: #141414;
+            min-width: 120px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+            z-index: 1; border-radius: 4px; border: 1px solid #2a2a2a; margin-top: 5px;
+        }
+        .dropdown-content div {
+            color: #888; padding: 12px 16px; text-decoration: none;
+            display: block; cursor: pointer; font-size: 14px; font-weight: bold;
+        }
+        .dropdown-content div:hover { background-color: #1a1a1a; color: #00ff55; }
+        .show-dropdown { display: block; }
+
+        /* Cartões Padrão */
         .card {
-            background-color: #141414;
-            border-left: 4px solid #00ff55;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            background-color: #141414; border-left: 4px solid #00ff55;
+            border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
         }
-
-        /* Cabeçalho do dia */
         .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #2a2a2a;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #2a2a2a; padding-bottom: 12px; margin-bottom: 15px;
         }
-        .dia {
-            color: #00ff55;
-            font-size: 18px;
-            font-weight: bold;
+        .dia, .refeicao { color: #00ff55; font-size: 18px; font-weight: bold; }
+        .foco, .horario { color: #888; font-size: 14px; }
+        .item-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #1f1f1f;
         }
-        .foco {
-            color: #888;
-            font-size: 14px;
-            font-weight: normal;
+        .item-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .nome { font-size: 16px; font-weight: 500; }
+        .badge {
+            background-color: #1e3a24; color: #00ff55; padding: 4px 10px;
+            border-radius: 4px; font-size: 13px; font-weight: bold;
+            white-space: nowrap; margin-left: 15px;
         }
 
-        /* Lista de exercícios */
-        .exercicio {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #1f1f1f;
+        /* Cartões INVERTIDOS (Novo) */
+        .card.inverted {
+            background-color: #00ff55; border-left: 4px solid #3a3636; color: #0a0a0a;
         }
-        .exercicio:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
+        .card.inverted .card-header { border-bottom: 1px solid rgba(10, 10, 10, 0.3); }
+        .card.inverted .dia, .card.inverted .foco, .card.inverted .nome {
+            color: #0a0a0a; font-weight: 800; /* Texto preto bem forte */
         }
-        .nome {
-            font-size: 16px;
-            font-weight: 500;
-        }
-        .reps {
-            background-color: #1e3a24;
-            color: #00ff55;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: bold;
-            white-space: nowrap;
-            margin-left: 15px;
-        }
+        .card.inverted .item-row { border-bottom: 1px solid rgba(10, 10, 10, 0.2); }
+        .card.inverted .badge { background-color: #0a0a0a; color: #00ff55; }
+
+        .note { font-size: 12px; color: #888; margin-top: -15px; margin-bottom: 20px; text-align: center; font-style: italic; }
+
     </style>
 </head>
 <body>
 
+    <header>
+        <h1 id="pageTitle">Treino Upper/Lower</h1>
+    </header>
+
     <div class="container">
-        <h1>Treino CAB</h1>
 
-        <div class="card">
-            <div class="card-header">
-                <span class="dia">C - Segunda</span>
-                <span class="foco">Pernas Completas</span>
+        <!-- ===== PÁGINA DE TREINO ===== -->
+        <div id="treinoPage" class="page active">
+            
+            <!-- Bloco UPPER com Toggle -->
+            <div class="workout-section">
+                <div class="dropdown" onclick="toggleDropdown(event)">
+                    <span id="upper-title" class="section-subtitle">UPPER 1 ▼</span>
+                    <div id="upper-dropdown" class="dropdown-content">
+                        <div onclick="switchUpper('upper1', event)">UPPER 1</div>
+                        <div onclick="switchUpper('upper2', event)">UPPER 2</div>
+                    </div>
+                </div>
+
+                <!-- Card UPPER 1 (Padrão) -->
+                <div id="card-upper1" class="card">
+                    <div class="card-header">
+                        <span class="dia">Treino A (Variação 1)</span>
+                        <span class="foco">Espessura e Força Base</span>
+                    </div>
+                    <div class="item-row"><span class="nome">Supino Reto (Barra/Halter)</span><span class="badge">4x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Remada Baixa</span><span class="badge">4x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Desenv. Ombros (Halteres)</span><span class="badge">3x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Puxada Alta (Polia)</span><span class="badge">3x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Rosca Polia</span><span class="badge">3x 10-12</span></div>
+                    <div class="item-row"><span class="nome">Tríceps na Polia</span><span class="badge">3x 10-12</span></div>
+                </div>
+
+                <!-- Card UPPER 2 (Invertido) -->
+                <div id="card-upper2" class="card inverted" style="display: none;">
+                    <div class="card-header">
+                        <span class="dia">Treino A (Variação 2)</span>
+                        <span class="foco">Peito Superior e Largura</span>
+                    </div>
+                    <div class="item-row"><span class="nome">Supino Inclinado (Halteres)</span><span class="badge">4x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Puxada Alta (Polia/Barra)</span><span class="badge">4x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Elevação Lateral (Halteres)</span><span class="badge">4x 12-15</span></div>
+                    <div class="item-row"><span class="nome">Crucifixo Máquina</span><span class="badge">3x 10-12</span></div>
+                    <div class="item-row"><span class="nome">Tríceps Testa / Francesa</span><span class="badge">3x 10-12</span></div>
+                    <div class="item-row"><span class="nome">Rosca Scott</span><span class="badge">3x 10-12</span></div>
+                </div>
             </div>
-            <div class="exercicio">
-                <span class="nome">Cadeira Extensora</span>
-                <span class="reps">3x 12-15</span>
+
+            <!-- Bloco LOWER Estático -->
+            <div class="workout-section">
+                <span class="section-subtitle static">LOWER</span>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="dia">Treino B</span>
+                        <span class="foco">Membros Inferiores</span>
+                    </div>
+                    <div class="item-row"><span class="nome">Agachamento Livre</span><span class="badge">4x 8-10</span></div>
+                    <div class="item-row"><span class="nome">Leg Press 45º</span><span class="badge">4x 10-12</span></div>
+                    <div class="item-row"><span class="nome">Cadeira Extensora</span><span class="badge">3x 12-15</span></div>
+                    <div class="item-row"><span class="nome">Mesa ou Cadeira Flexora</span><span class="badge">4x 10-12</span></div>
+                    <div class="item-row"><span class="nome">Panturrilha (Máquina/Leg)</span><span class="badge">4x 15-20</span></div>
+                </div>
             </div>
-            <div class="exercicio">
-                <span class="nome">Cadeira Flexora</span>
-                <span class="reps">4x 10-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Leg Press 45º</span>
-                <span class="reps">3x 10-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Mesa Flexora</span>
-                <span class="reps">4x 10-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Panturrilha</span>
-                <span class="reps">4x 15-20</span>
-            </div>
+
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <span class="dia">A - Terça</span>
-                <span class="foco">Peito, Ombro, Tríceps</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Supino Reto</span>
-                <span class="reps">4x 8-10</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Supino Inclinado</span>
-                <span class="reps">3x 8-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Desenv. Halteres</span>
-                <span class="reps">4x 8-10</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Elevação Lateral</span>
-                <span class="reps">4x 12-15</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Tríceps - Polia</span>
-                <span class="reps">3x 10-12</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <span class="dia">B - Quarta</span>
-                <span class="foco">Costas, Bíceps, Trapézio</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Puxada Alta ou Barra Fixa</span>
-                <span class="reps">4x 8-10</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Remada Baixa (Triângulo)</span>
-                <span class="reps">3x 10-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Pull Down - Polia</span>
-                <span class="reps">4x 8-10</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Rosca Smith</span>
-                <span class="reps">3x 8-12</span>
-            </div>
-            <div class="exercicio">
-                <span class="nome">Rosca Martelo</span>
-                <span class="reps">3x 10-12</span>
-            </div>
-        </div>
-
+        
     </div>
 
+    <script>
+        // Lógica do Dropdown e Alternância UPPER 1 / UPPER 2
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            document.getElementById("upper-dropdown").classList.toggle("show-dropdown");
+        }
+
+        function switchUpper(type, event) {
+            event.stopPropagation();
+            document.getElementById("upper-dropdown").classList.remove("show-dropdown");
+            
+            const card1 = document.getElementById("card-upper1");
+            const card2 = document.getElementById("card-upper2");
+            const title = document.getElementById("upper-title");
+            
+            if (type === 'upper1') {
+                card1.style.display = "block";
+                card2.style.display = "none";
+                title.innerText = "UPPER 1 ▼";
+            } else if (type === 'upper2') {
+                card1.style.display = "none";
+                card2.style.display = "block";
+                title.innerText = "UPPER 2 ▼";
+            }
+        }
+
+        // Fecha o dropdown se clicar fora
+        window.onclick = function(event) {
+            if (!event.target.matches('.section-subtitle')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show-dropdown')) {
+                        openDropdown.classList.remove('show-dropdown');
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>
